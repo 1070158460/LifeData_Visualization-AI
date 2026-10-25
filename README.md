@@ -18,7 +18,7 @@ inbox\telegram\日期\（原始消息+文件落地）
 AI 解析（按 docs\parse-rules.md，规则可自定义）
   ├─ 追加写入 data\（生活数据库，CSV/JSONL，只追加）
   ├─ 重新生成 dashboard\index.html 可视化看板
-  └─ 每晚 22:30 定时日报，经 bot 发回手机
+  └─ 每天早上 9:00 定时日报，经 bot 发回手机
 
 小米手环 → 安卓 Gadgetbridge 自动导出
         → Syncthing 双向同步 → inbox\band\ → 同样进入 AI 解析

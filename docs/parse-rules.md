@@ -27,7 +27,7 @@
 
 ## 每日汇总（定时任务）
 
-每晚 22:30：
+每天早上 9:00：
 
 1. 解析当天 inbox 新内容入 `data\`
 2. 用最新数据重新生成 `E:\life-os\dashboard\index.html`
