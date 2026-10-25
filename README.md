@@ -45,28 +45,24 @@ life-os/
 ├── config.example.json     桥配置模板（复制为 scripts/config.json 使用）
 ├── start_syncthing.bat     一键启动电脑端 Syncthing
 ├── docs/
-│   ├── SETUP.md            完整安装配置指南（新手从这里开始）
-│   └── parse-rules.md      AI 解析 inbox → data 的规则
+│   ├── SETUP.md            安装配置指南（新手从这里开始）
+│   ├── USAGE.md            日常使用手册（装好后看这个）
+│   ├── parse-rules.md      AI 解析 inbox → data 的规则（换AI就交接这份文件）
+│   └── data-example/       data 文件格式示例
 ├── scripts/
 │   ├── tg_bridge.py        Telegram 桥（核心，零第三方依赖）
 │   └── start_bridge.bat    一键启动桥
 ├── dashboard/
-│   └── index.html          可视化看板（由 AI 按最新数据重新生成）
-├── data/                   生活数据库（仓库内为格式示例，真实数据不入库）
-│   ├── sleep.csv / steps.csv / weight.csv / mood.csv
-│   ├── diet.jsonl
-│   └── transactions.csv
-└── inbox/                  原始落地处（运行时目录，不入库）
-    ├── telegram/           bot 收到的消息与文件
-    ├── band/               手环同步目录（与手机 Syncthing 配对）
-    └── processed/          已解析的消息归档
+│   └── index.html          可视化看板（内置演示数据，部署后由 AI 按真实数据重绘）
+└── data/                   生活数据库（运行时目录，你的真实数据，已被 .gitignore 排除）
+    └── inbox/              原始落地处（同上，不入库）
 ```
 
 `tools/`（adb、Syncthing 便携版、token_extractor 等）为本地第三方工具，不入库，获取方式见 SETUP.md。
 
 ## 快速开始
 
-完整步骤见 **[docs/SETUP.md](docs/SETUP.md)**，这里是最短路径：
+安装见 **[docs/SETUP.md](docs/SETUP.md)**，装好后的日常用法见 **[docs/USAGE.md](docs/USAGE.md)**。最短路径：
 
 1. **网络**：国内需要能访问 Telegram 的代理（Clash 系列均可），记下本地代理端口
 2. **建 bot**：Telegram 找 @BotFather → `/newbot` → username 必须以 `bot` 结尾 → 拿到 token

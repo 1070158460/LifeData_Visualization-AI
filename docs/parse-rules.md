@@ -37,7 +37,14 @@
    - 今日支出笔数与合计
    - 一句观察（趋势或异常，如"本周第三次睡眠不足6小时"）
 
-发送方式：`curl -s -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" -d chat_id=<ID> -d text="<日报>"`
+发送方式（注意：Windows curl 直接传中文会变 GBK 导致 400 错误，必须先写成 UTF-8 文件再用 `text@文件` 传）：
+
+```bash
+python -c "open('%TEMP%/tgmsg.txt','w',encoding='utf-8').write('<日报内容>')"
+curl -s -x http://127.0.0.1:7897 -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" -d chat_id=<ID> --data-urlencode "text@%TEMP%/tgmsg.txt"
+```
+
+手环数据解析：`inbox\band\Gadgetbridge.db` 是 SQLite（复制到临时目录再读，避免与同步冲突），活动数据在 `MI_BAND_ACTIVITY_SAMPLE` 表（TIMESTAMP/STEPS/HEART_RATE/RAW_KIND），按日聚合追加 `steps.csv`；睡眠需按 RAW_KIND 分段识别后写 `sleep.csv`。
 
 ## 纪律
 
