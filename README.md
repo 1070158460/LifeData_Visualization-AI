@@ -44,7 +44,6 @@ life-os/
 ├── .gitignore              排除隐私与运行时数据
 ├── config.example.json     桥配置模板（复制为 scripts/config.json 使用）
 ├── start_syncthing.bat     一键启动电脑端 Syncthing
-├── get_band_key.bat        一键提取手环认证密钥
 ├── docs/
 │   ├── SETUP.md            完整安装配置指南（新手从这里开始）
 │   └── parse-rules.md      AI 解析 inbox → data 的规则
@@ -80,7 +79,7 @@ life-os/
 
 手环绑过官方 App（小米运动/Zepp Life）后，Gadgetbridge 配对需要认证密钥：
 
-- **方法一（官方推荐）**：[Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/xiaomi-cloud-tokens-extractor) 登录小米账号提取（本项目 `get_band_key.bat` 已封装，需把 exe 放入 `tools\`）
+- **方法一（官方推荐）**：[Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/xiaomi-cloud-tokens-extractor) 登录小米账号提取
 - **方法二**：手机装 [HuaFetch](https://github.com/Keddnyo/HuaFetch) 登录小米账号获取
 - 密钥输入 Gadgetbridge 时**加 `0x` 前缀**
 - **不要**从官方 App 解绑（会使密钥失效）；不用官方 App 时直接停用它即可
