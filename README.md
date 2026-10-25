@@ -40,7 +40,7 @@ AI 解析（按 docs\parse-rules.md，规则可自定义）
 ```
 life-os/
 ├── README.md               本文件
-├── LICENSE                 MIT
+├── LICENSE                 GPL-3.0
 ├── .gitignore              排除隐私与运行时数据
 ├── config.example.json     桥配置模板（复制为 scripts/config.json 使用）
 ├── start_syncthing.bat     一键启动电脑端 Syncthing
@@ -108,4 +108,4 @@ life-os/
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE) — 技术无国界，共同进步 🌍
