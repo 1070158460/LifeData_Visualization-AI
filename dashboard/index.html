@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Life-OS 生活看板</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --fg:#1a1d21; --muted:#6b7280;
+    --border:#e5e7eb; --accent:#3b5bdb; --grid:#e5e7eb;
+    --cat1:#3b5bdb; --cat2:#f59e0b; --cat3:#10b981; --cat4:#ef4444;
+    --cat5:#8b5cf6; --cat6:#64748b; --cat7:#94a3b8;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1115; --card:#16181d; --fg:#e5e7eb; --muted:#9aa1ac;
+      --border:#2a2e36; --accent:#7c93f5; --grid:#2a2e36;
+      --cat1:#7c93f5; --cat2:#fbbf24; --cat3:#34d399; --cat4:#f87171;
+      --cat5:#a78bfa; --cat6:#94a3b8; --cat7:#64748b;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;font-size:14px}
+  header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  h1{font-size:20px;margin:0;font-weight:600}
+  .tag{font-size:12px;color:var(--muted);border:1px solid var(--border);
+    border-radius:99px;padding:2px 10px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .kpi .lab{font-size:12px;color:var(--muted)}
+  .kpi .val{font-size:22px;font-weight:600;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+  .kpi .sub{font-size:12px;color:var(--muted)}
+  .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+  .panel h2{font-size:14px;font-weight:600;margin:0 0 10px}
+  .panel svg{display:block;width:100%;height:auto}
+  .panel text{font-size:12px;fill:var(--muted)}
+  .donut-flex{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .legend{display:flex;flex-direction:column;gap:4px;font-size:13px}
+  .legend-row{display:flex;align-items:center;gap:8px}
+  .sw{width:10px;height:10px;border-radius:2px;flex:none}
+  .legend-row .v{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--fg)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:500}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  footer{margin-top:16px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>生活看板</h1>
+  <span class="tag">样例数据</span>
+  <span style="color:var(--muted);font-size:13px">2026-10-11 ~ 2026-10-24</span>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="charts">
+  <div class="panel"><h2>睡眠（小时）</h2><div id="sleepChart"></div></div>
+  <div class="panel"><h2>步数</h2><div id="stepsChart"></div></div>
+  <div class="panel"><h2>支出分类（14天）</h2><div class="donut-flex"><div id="spendDonut"></div><div class="legend" id="spendLegend"></div></div></div>
+  <div class="panel"><h2>每日支出（元）</h2><div id="spendDaily"></div></div>
+  <div class="panel"><h2>饮食热量（kcal，按有记录日）</h2><div id="kcalChart"></div></div>
+  <div class="panel"><h2>体重（kg）</h2><div id="weightChart"></div></div>
+</div>
+
+<div class="panel" style="margin-top:12px"><h2>最近饮食</h2>
+  <table id="dietTable"><thead><tr><th>时间</th><th>餐</th><th>内容</th><th class="num">热量</th><th class="num">蛋白质</th></tr></thead><tbody></tbody></table>
+</div>
+
+<footer>由 AI 读取 life-os/data 自动生成 · 当前展示为样例数据，真实数据接入后同格式自动替换</footer>
+
+<script>
+const LIFE_DATA = {
+  sleep: [
+    {d:"10-11",h:7.5,s:82},{d:"10-12",h:6.5,s:71},{d:"10-13",h:5.9,s:63},{d:"10-14",h:7.8,s:86},
+    {d:"10-15",h:7.3,s:79},{d:"10-16",h:6.5,s:68},{d:"10-17",h:8.8,s:91},{d:"10-18",h:8.2,s:88},
+    {d:"10-19",h:7.0,s:75},{d:"10-20",h:5.8,s:60},{d:"10-21",h:7.5,s:83},{d:"10-22",h:7.2,s:78},
+    {d:"10-23",h:6.4,s:67},{d:"10-24",h:7.3,s:80}
+  ],
+  steps: [
+    {d:"10-11",v:8432},{d:"10-12",v:6210},{d:"10-13",v:12050},{d:"10-14",v:5320},{d:"10-15",v:9870},
+    {d:"10-16",v:4200},{d:"10-17",v:15320},{d:"10-18",v:9120},{d:"10-19",v:7350},{d:"10-20",v:3980},
+    {d:"10-21",v:10650},{d:"10-22",v:8010},{d:"10-23",v:12980},{d:"10-24",v:6540}
+  ],
+  weight: [
+    {d:"10-11",v:74.8},{d:"10-14",v:74.5},{d:"10-18",v:74.1},{d:"10-21",v:73.9},{d:"10-24",v:73.6}
+  ],
+  diet: [
+    {date:"2026-10-11",time:"08:20",meal:"早餐",items:["豆浆","油条","茶叶蛋"],kcal:520,protein_g:18},
+    {date:"2026-10-11",time:"12:30",meal:"午餐",items:["黄焖鸡米饭"],kcal:750,protein_g:35},
+    {date:"2026-10-11",time:"19:00",meal:"晚餐",items:["番茄鸡蛋面"],kcal:620,protein_g:22},
+    {date:"2026-10-12",time:"08:00",meal:"早餐",items:["包子","小米粥"],kcal:450,protein_g:15},
+    {date:"2026-10-12",time:"12:10",meal:"午餐",items:["食堂两荤一素"],kcal:700,protein_g:30},
+    {date:"2026-10-13",time:"12:40",meal:"午餐",items:["麻辣香锅"],kcal:950,protein_g:40},
+    {date:"2026-10-13",time:"19:30",meal:"晚餐",items:["酸奶","水果"],kcal:280,protein_g:8},
+    {date:"2026-10-14",time:"12:15",meal:"午餐",items:["食堂套餐"],kcal:650,protein_g:28},
+    {date:"2026-10-14",time:"19:00",meal:"晚餐",items:["牛肉火锅"],kcal:1100,protein_g:55},
+    {date:"2026-10-15",time:"08:30",meal:"早餐",items:["三明治","拿铁"],kcal:480,protein_g:20},
+    {date:"2026-10-15",time:"12:35",meal:"午餐",items:["猪脚饭"],kcal:850,protein_g:38},
+    {date:"2026-10-16",time:"12:05",meal:"午餐",items:["食堂套餐"],kcal:680,protein_g:30},
+    {date:"2026-10-16",time:"20:00",meal:"晚餐",items:["鸡胸肉沙拉"],kcal:420,protein_g:35},
+    {date:"2026-10-17",time:"12:30",meal:"午餐",items:["海底捞"],kcal:1300,protein_g:60},
+    {date:"2026-10-18",time:"12:20",meal:"午餐",items:["轻食沙拉"],kcal:450,protein_g:25},
+    {date:"2026-10-19",time:"12:10",meal:"午餐",items:["食堂套餐"],kcal:700,protein_g:32},
+    {date:"2026-10-20",time:"12:40",meal:"午餐",items:["肯德基套餐"],kcal:950,protein_g:40},
+    {date:"2026-10-21",time:"12:15",meal:"午餐",items:["食堂套餐"],kcal:660,protein_g:30},
+    {date:"2026-10-22",time:"12:45",meal:"午餐",items:["螺蛳粉"],kcal:900,protein_g:25},
+    {date:"2026-10-23",time:"12:10",meal:"午餐",items:["食堂套餐"],kcal:680,protein_g:30},
+    {date:"2026-10-23",time:"19:30",meal:"晚餐",items:["火锅"],kcal:1200,protein_g:58},
+    {date:"2026-10-24",time:"12:35",meal:"午餐",items:["牛肉面"],kcal:780,protein_g:32}
+  ],
+  transactions: [
+    {date:"2026-10-11",amount:28.5,category:"餐饮",merchant:"美团外卖-黄焖鸡",platform:"支付宝"},
+    {date:"2026-10-11",amount:6.0,category:"交通",merchant:"地铁",platform:"微信"},
+    {date:"2026-10-11",amount:18.0,category:"奶茶咖啡",merchant:"喜茶",platform:"微信"},
+    {date:"2026-10-12",amount:15.0,category:"餐饮",merchant:"食堂午餐",platform:"支付宝"},
+    {date:"2026-10-12",amount:89.0,category:"购物",merchant:"京东-数据线",platform:"支付宝"},
+    {date:"2026-10-12",amount:3.5,category:"交通",merchant:"哈啰单车",platform:"支付宝"},
+    {date:"2026-10-13",amount:35.0,category:"餐饮",merchant:"美团外卖-麻辣香锅",platform:"支付宝"},
+    {date:"2026-10-13",amount:12.5,category:"交通",merchant:"滴滴出行",platform:"微信"},
+    {date:"2026-10-13",amount:22.0,category:"奶茶咖啡",merchant:"瑞幸咖啡",platform:"微信"},
+    {date:"2026-10-14",amount:16.0,category:"餐饮",merchant:"食堂三餐",platform:"支付宝"},
+    {date:"2026-10-14",amount:45.0,category:"娱乐",merchant:"哔哩哔哩大会员",platform:"微信"},
+    {date:"2026-10-14",amount:39.9,category:"购物",merchant:"淘宝-手机壳",platform:"支付宝"},
+    {date:"2026-10-15",amount:28.0,category:"餐饮",merchant:"美团外卖-猪脚饭",platform:"支付宝"},
+    {date:"2026-10-15",amount:6.0,category:"交通",merchant:"地铁",platform:"微信"},
+    {date:"2026-10-16",amount:15.0,category:"餐饮",merchant:"食堂午餐",platform:"支付宝"},
+    {date:"2026-10-16",amount:128.0,category:"购物",merchant:"京东-跑鞋",platform:"支付宝"},
+    {date:"2026-10-16",amount:20.0,category:"奶茶咖啡",merchant:"星巴克",platform:"微信"},
+    {date:"2026-10-17",amount:68.0,category:"餐饮",merchant:"聚餐-海底捞",platform:"支付宝"},
+    {date:"2026-10-17",amount:15.0,category:"奶茶咖啡",merchant:"茶百道",platform:"微信"},
+    {date:"2026-10-17",amount:8.0,category:"交通",merchant:"滴滴出行",platform:"微信"},
+    {date:"2026-10-18",amount:25.0,category:"餐饮",merchant:"美团外卖-轻食沙拉",platform:"支付宝"},
+    {date:"2026-10-18",amount:59.9,category:"娱乐",merchant:"Steam游戏",platform:"支付宝"},
+    {date:"2026-10-19",amount:15.0,category:"餐饮",merchant:"食堂午餐",platform:"支付宝"},
+    {date:"2026-10-19",amount:30.0,category:"日用",merchant:"盒马-水果",platform:"支付宝"},
+    {date:"2026-10-19",amount:6.0,category:"交通",merchant:"地铁",platform:"微信"},
+    {date:"2026-10-20",amount:32.0,category:"餐饮",merchant:"美团外卖-肯德基",platform:"支付宝"},
+    {date:"2026-10-20",amount:15.0,category:"奶茶咖啡",merchant:"Manner咖啡",platform:"微信"},
+    {date:"2026-10-21",amount:15.0,category:"餐饮",merchant:"食堂午餐",platform:"支付宝"},
+    {date:"2026-10-21",amount:100.0,category:"通讯",merchant:"话费充值",platform:"支付宝"},
+    {date:"2026-10-21",amount:9.9,category:"娱乐",merchant:"网易云音乐会员",platform:"微信"},
+    {date:"2026-10-22",amount:26.0,category:"餐饮",merchant:"美团外卖-螺蛳粉",platform:"支付宝"},
+    {date:"2026-10-22",amount:45.0,category:"日用",merchant:"屈臣氏",platform:"支付宝"},
+    {date:"2026-10-22",amount:6.0,category:"交通",merchant:"地铁",platform:"微信"},
+    {date:"2026-10-23",amount:15.0,category:"餐饮",merchant:"食堂午餐",platform:"支付宝"},
+    {date:"2026-10-23",amount:16.0,category:"奶茶咖啡",merchant:"喜茶",platform:"微信"},
+    {date:"2026-10-23",amount:78.0,category:"购物",merchant:"淘宝-书籍",platform:"支付宝"},
+    {date:"2026-10-24",amount:29.0,category:"餐饮",merchant:"美团外卖-牛肉面",platform:"支付宝"},
+    {date:"2026-10-24",amount:3.5,category:"交通",merchant:"哈啰单车",platform:"支付宝"}
+  ]
+};
+
+const NS = "http://www.w3.org/2000/svg";
+function S(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function niceCeil(v){
+  const pow = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1,1.5,2,2.5,3,4,5,6,8,10]) if (m*pow >= v) return m*pow;
+  return v;
+}
+const fmtN = n => n.toLocaleString("zh-CN");
+const fmtY = n => "¥" + (Math.round(n*10)/10).toLocaleString("zh-CN", {minimumFractionDigits:0});
+
+function barChart(id, rows, opt){
+  const host = document.getElementById(id);
+  host.innerHTML = "";
+  const W = Math.max(host.clientWidth, 280), H = opt.h || 210;
+  const m = {t:12, r:10, b:28, l:48}, iw = W-m.l-m.r, ih = H-m.t-m.b;
+  const svg = S("svg", {viewBox:`0 0 ${W} ${H}`, role:"img", "aria-label":opt.aria}, host);
+  const g = S("g", {transform:`translate(${m.l},${m.t})`}, svg);
+  const ymax = niceCeil(Math.max(...rows.map(r=>r.v), opt.ref||0) * 1.12);
+  const y = v => ih - (v/ymax)*ih;
+  const ticks = [];
+  for (let i=0;i<=4;i++) ticks.push(ymax*i/4);
+  ticks.forEach(t=>{
+    S("line", {x1:0, x2:iw, y1:y(t), y2:y(t), stroke:"var(--grid)", "stroke-width":1}, g);
+    const tx = S("text", {x:-6, y:y(t)+4, "text-anchor":"end"}, g);
+    tx.textContent = opt.tickFmt ? opt.tickFmt(t) : Math.round(t);
+  });
+  const band = iw/rows.length, bw = band*0.58;
+  rows.forEach((r,i)=>{
+    const bx = i*band + (band-bw)/2;
+    const bar = S("rect", {x:bx, y:y(r.v), width:bw, height:Math.max(0, ih-y(r.v)), fill:"var(--accent)", opacity: i===rows.length-1 ? 1 : 0.85}, g);
+    const t = S("title", {}, bar);
+    t.textContent = `${r.label || r.d} · ${opt.tipFmt(r)}`;
+  });
+  if (opt.ref){
+    S("line", {x1:0, x2:iw, y1:y(opt.ref), y2:y(opt.ref), stroke:"var(--muted)", "stroke-width":1, "stroke-dasharray":"4 3"}, g);
+    const rt = S("text", {x:iw, y:y(opt.ref)-4, "text-anchor":"end", fill:"var(--muted)"}, g);
+    rt.textContent = opt.refLabel || "";
+  }
+  const step = Math.max(1, Math.ceil(rows.length/7));
+  rows.forEach((r,i)=>{
+    if (i % step === 0 || i === rows.length-1){
+      const tx = S("text", {x:i*band+band/2, y:ih+16, "text-anchor":"middle"}, g);
+      tx.textContent = r.d;
+    }
+  });
+}
+
+function lineChart(id, rows, opt){
+  const host = document.getElementById(id);
+  host.innerHTML = "";
+  const W = Math.max(host.clientWidth, 280), H = opt.h || 190;
+  const m = {t:12, r:14, b:28, l:48}, iw = W-m.l-m.r, ih = H-m.t-m.b;
+  const svg = S("svg", {viewBox:`0 0 ${W} ${H}`, role:"img", "aria-label":opt.aria}, host);
+  const g = S("g", {transform:`translate(${m.l},${m.t})`}, svg);
+  const vals = rows.map(r=>r.v);
+  const lo = Math.min(...vals), hi = Math.max(...vals), pad = Math.max((hi-lo)*0.5, 0.2);
+  const y0 = lo-pad, y1 = hi+pad;
+  const Y = v => ih - ((v-y0)/(y1-y0))*ih;
+  for (let i=0;i<=3;i++){
+    const t = y0 + (y1-y0)*i/3;
+    S("line", {x1:0, x2:iw, y1:Y(t), y2:Y(t), stroke:"var(--grid)", "stroke-width":1}, g);
+    const tx = S("text", {x:-6, y:Y(t)+4, "text-anchor":"end"}, g);
+    tx.textContent = Math.round(t*10)/10;
+  }
+  const n = rows.length;
+  const X = i => n===1 ? iw/2 : (i/(n-1))*iw;
+  const pts = rows.map((r,i)=>`${X(i)},${Y(r.v)}`).join(" ");
+  S("polyline", {points:pts, fill:"none", stroke:"var(--accent)", "stroke-width":2}, g);
+  rows.forEach((r,i)=>{
+    const c = S("circle", {cx:X(i), cy:Y(r.v), r:3.5, fill:"var(--accent)"}, g);
+    const t = S("title", {}, c);
+    t.textContent = `${r.d} · ${r.v} kg`;
+  });
+  [0, Math.floor((n-1)/2), n-1].forEach(i=>{
+    const tx = S("text", {x:X(i), y:ih+16, "text-anchor":i===0?"start":(i===n-1?"end":"middle")}, g);
+    tx.textContent = rows[i].d;
+  });
+}
+
+const CATCOLORS = ["var(--cat1)","var(--cat2)","var(--cat3)","var(--cat4)","var(--cat5)","var(--cat6)","var(--cat7)"];
+function donut(id, legendId, rows, centerLabel){
+  const host = document.getElementById(id);
+  host.innerHTML = "";
+  const size = 170, cx = size/2, cy = size/2, R = 78, ir = 52;
+  const svg = S("svg", {viewBox:`0 0 ${size} ${size}`, width:size, height:size, role:"img", "aria-label":"支出分类"}, host);
+  const total = rows.reduce((a,b)=>a+b.v,0);
+  let a0 = -Math.PI/2;
+  rows.forEach((r,i)=>{
+    const a1 = a0 + (r.v/total)*Math.PI*2;
+    const P = (rad,a)=>[cx+rad*Math.cos(a), cy+rad*Math.sin(a)];
+    const large = (a1-a0) > Math.PI ? 1 : 0;
+    const [x0,y0] = P(R,a0), [x1,y1] = P(R,a1), [x2,y2] = P(ir,a1), [x3,y3] = P(ir,a0);
+    const seg = S("path", {
+      d:`M${x0},${y0} A${R},${R} 0 ${large} 1 ${x1},${y1} L${x2},${y2} A${ir},${ir} 0 ${large} 0 ${x3},${y3} Z`,
+      fill:CATCOLORS[i % CATCOLORS.length]
+    }, svg);
+    const t = S("title", {}, seg);
+    t.textContent = `${r.k} ¥${r.v}（${Math.round(r.v/total*100)}%）`;
+    a0 = a1;
+  });
+  const c1 = S("text", {x:cx, y:cy-2, "text-anchor":"middle", fill:"var(--fg)", "font-size":"15", "font-weight":"600"}, svg);
+  c1.textContent = centerLabel;
+  const c2 = S("text", {x:cx, y:cy+14, "text-anchor":"middle"}, svg);
+  c2.textContent = "14天合计";
+  const lg = document.getElementById(legendId);
+  lg.innerHTML = "";
+  rows.forEach((r,i)=>{
+    const row = document.createElement("div");
+    row.className = "legend-row";
+    row.innerHTML = `<span class="sw" style="background:${CATCOLORS[i % CATCOLORS.length]}"></span>` +
+      `<span>${r.k}</span><span class="v">¥${r.v} · ${Math.round(r.v/total*100)}%</span>`;
+    lg.appendChild(row);
+  });
+}
+
+function renderKPIs(){
+  const sl = LIFE_DATA.sleep, st = LIFE_DATA.steps, w = LIFE_DATA.weight, tx = LIFE_DATA.transactions, di = LIFE_DATA.diet;
+  const avg = a => a.reduce((x,y)=>x+y,0)/a.length;
+  const lastSl = sl[sl.length-1];
+  const days = {};
+  di.forEach(d=>{ const k=d.date.slice(5); days[k]=(days[k]||0)+d.kcal; });
+  const kcalDays = Object.entries(days);
+  const byCat = {};
+  tx.forEach(t=>byCat[t.category]=(byCat[t.category]||0)+t.amount);
+  const cats = Object.entries(byCat).map(([k,v])=>({k, v:Math.round(v*10)/10})).sort((a,b)=>b.v-a.v);
+  const total = cats.reduce((a,b)=>a+b.v,0);
+  const kpis = [
+    {lab:"昨夜睡眠", val:lastSl.h+" 小时", sub:"得分 "+lastSl.s+" · 14天均值 "+avg(sl.map(x=>x.h)).toFixed(1)+"h"},
+    {lab:"日均步数", val:fmtN(Math.round(avg(st.map(x=>x.v)))), sub:"目标 8000 · 最高 "+fmtN(Math.max(...st.map(x=>x.v)))},
+    {lab:"14天支出", val:"¥"+fmtN(Math.round(total)), sub:cats[0].k+"占 "+Math.round(cats[0].v/total*100)+"% · 共"+tx.length+"笔"},
+    {lab:"日均热量", val:fmtN(Math.round(kcalDays.reduce((a,b)=>a+b[1],0)/kcalDays.length))+" kcal", sub:"按 "+kcalDays.length+" 个记录日 · 目标 2000"},
+    {lab:"体重", val:w[w.length-1].v+" kg", sub:"14天 "+(w[w.length-1].v-w[0].v>=0?"+":"")+(w[w.length-1].v-w[0].v).toFixed(1)+" kg"}
+  ];
+  const host = document.getElementById("kpis");
+  host.innerHTML = "";
+  kpis.forEach(k=>{
+    const d = document.createElement("div");
+    d.className = "kpi";
+    d.innerHTML = `<div class="lab">${k.lab}</div><div class="val">${k.val}</div><div class="sub">${k.sub}</div>`;
+    host.appendChild(d);
+  });
+  return cats;
+}
+
+function render(){
+  renderKPIs();
+  barChart("sleepChart", LIFE_DATA.sleep.map(x=>({...x, v:x.h})), {
+    h:200, aria:"每日睡眠时长", ref:7, refLabel:"7小时",
+    tickFmt:t=>(Math.round(t*10)/10), tipFmt:r=>`${r.h}小时 · 得分${r.s}`
+  });
+  barChart("stepsChart", LIFE_DATA.steps, {
+    h:200, aria:"每日步数", ref:8000, refLabel:"目标8000",
+    tickFmt:t=>t>=1000?(t/1000)+"k":t, tipFmt:r=>fmtN(r.v)+"步"
+  });
+  const byCat = {};
+  LIFE_DATA.transactions.forEach(t=>byCat[t.category]=(byCat[t.category]||0)+t.amount);
+  const cats = Object.entries(byCat).map(([k,v])=>({k, v:Math.round(v*10)/10})).sort((a,b)=>b.v-a.v);
+  const totalSpend = Math.round(cats.reduce((a,b)=>a+b.v,0));
+  donut("spendDonut", "spendLegend", cats, "¥"+fmtN(totalSpend));
+  const byDay = {};
+  LIFE_DATA.transactions.forEach(t=>{const k=t.date.slice(5); byDay[k]=(byDay[k]||0)+t.amount;});
+  barChart("spendDaily", Object.entries(byDay).map(([d,v])=>({d, v})), {
+    h:200, aria:"每日支出", tickFmt:t=>Math.round(t), tipFmt:r=>"¥"+(Math.round(r.v*10)/10)
+  });
+  const kcalByDay = {};
+  LIFE_DATA.diet.forEach(d=>{const k=d.date.slice(5); kcalByDay[k]=(kcalByDay[k]||0)+d.kcal;});
+  barChart("kcalChart", Object.entries(kcalByDay).map(([d,v])=>({d, v})), {
+    h:200, aria:"每日饮食热量", ref:2000, refLabel:"目标2000",
+    tickFmt:t=>t>=1000?(t/1000)+"k":t, tipFmt:r=>fmtN(r.v)+" kcal"
+  });
+  lineChart("weightChart", LIFE_DATA.weight, {aria:"体重趋势"});
+  const tb = document.querySelector("#dietTable tbody");
+  tb.innerHTML = "";
+  LIFE_DATA.diet.slice(-8).reverse().forEach(d=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${d.date.slice(5)} ${d.time}</td><td>${d.meal}</td><td>${d.items.join("、")}</td>` +
+      `<td class="num">${d.kcal}</td><td class="num">${d.protein_g}g</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+let rt;
+window.addEventListener("resize", ()=>{clearTimeout(rt); rt=setTimeout(render,150);});
+render();
+</script>
+</body>
+</html>

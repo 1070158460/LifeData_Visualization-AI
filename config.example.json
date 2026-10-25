@@ -1,0 +1,5 @@
+{
+  "bot_token": "在这里粘贴BotFather给的token",
+  "allowed_chat_id": null,
+  "proxy": "http://127.0.0.1:7897"
+}

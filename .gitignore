@@ -1,0 +1,15 @@
+# 隐私与凭据（绝不入库）
+scripts/config.json
+tools/
+logs/
+inbox/
+STATUS.md
+subscription_backup.yaml
+
+# 运行时
+__pycache__/
+*.pyc
+
+# 系统
+Thumbs.db
+.DS_Store
