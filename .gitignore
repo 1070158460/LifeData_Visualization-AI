@@ -13,3 +13,4 @@ __pycache__/
 # 系统
 Thumbs.db
 .DS_Store
+data/
